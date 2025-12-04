@@ -47,15 +47,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Configure Android signing
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          cat > android/key.properties << EOF
-          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=upload-keystore.jks
-          EOF
+#      - name: Configure Android signing
+#        run: |
+#          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+#          cat > android/key.properties << EOF
+#          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+#          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+#          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+#          storeFile=upload-keystore.jks
+#          EOF
 
       - name: Build APK
         run: flutter build apk --release --dart-define=ENABLE_UPDATE_CHECK=true
@@ -66,18 +66,18 @@ jobs:
 
       - name: Rename APK
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk plezy-android.apk
+          cp build/app/outputs/flutter-apk/app-release.apk donut-android.apk
 
       - name: Attest APK
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: plezy-android.apk
+          subject-path: donut-android.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: plezy-android.apk
+          path: donut-android.apk
 
   build-ios:
     runs-on: macos-26
@@ -124,18 +124,18 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r plezy-ios.ipa Payload
+          zip -r donut-ios.ipa Payload
 
       - name: Attest IPA
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: plezy-ios.ipa
+          subject-path: donut-ios.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: plezy-ios.ipa
+          path: donut-ios.ipa
 
   build-macos:
     runs-on: macos-26
@@ -178,97 +178,97 @@ jobs:
       - name: Build macOS
         run: flutter build macos --release --dart-define=ENABLE_UPDATE_CHECK=true
 
-      - name: Import Code Signing Certificate
-        env:
-          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
-          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-        run: |
-          # Create temporary keychain
-          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+#      - name: Import Code Signing Certificate
+#        env:
+#          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+#          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+#          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+#        run: |
+#          # Create temporary keychain
+#          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+#          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+#          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+#          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
           # Import certificate to keychain
-          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
-          echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-          security import $CERTIFICATE_PATH -k $KEYCHAIN_PATH -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+#          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+#          echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+#          security import $CERTIFICATE_PATH -k $KEYCHAIN_PATH -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+#          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
           # Add keychain to search list
-          security list-keychains -d user -s $KEYCHAIN_PATH login.keychain
+#          security list-keychains -d user -s $KEYCHAIN_PATH login.keychain
 
-      - name: Sign Application
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          # Find the identity
-          IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | grep -o '".*"' | tr -d '"')
-          echo "Signing with identity: $IDENTITY"
-
-          APP_PATH="build/macos/Build/Products/Release/plezy.app"
+#      - name: Sign Application
+#        env:
+#          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+#        run: |
+#          # Find the identity
+#          IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | grep -o '".*"' | tr -d '"')
+#          echo "Signing with identity: $IDENTITY"
+#
+#          APP_PATH="build/macos/Build/Products/Release/plezy.app"
 
           # Sign all frameworks and dylibs first (inside-out signing)
-          find "$APP_PATH/Contents/Frameworks" -name "*.framework" -o -name "*.dylib" | while read framework; do
-            echo "Signing: $framework"
-            codesign --force --sign "$IDENTITY" --timestamp --options runtime "$framework"
-          done
+#          find "$APP_PATH/Contents/Frameworks" -name "*.framework" -o -name "*.dylib" | while read framework; do
+#            echo "Signing: $framework"
+#            codesign --force --sign "$IDENTITY" --timestamp --options runtime "$framework"
+#          done
 
           # Sign the app bundle itself
-          echo "Signing app bundle: $APP_PATH"
-          codesign --force --sign "$IDENTITY" --timestamp --options runtime --entitlements macos/Runner/Release.entitlements "$APP_PATH"
+#          echo "Signing app bundle: $APP_PATH"
+#          codesign --force --sign "$IDENTITY" --timestamp --options runtime --entitlements macos/Runner/Release.entitlements "$APP_PATH"
 
-      - name: Verify Signature
-        run: |
-          APP_PATH="build/macos/Build/Products/Release/plezy.app"
-          echo "Verifying signature..."
-          codesign -dvvv "$APP_PATH"
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+#      - name: Verify Signature
+#        run: |
+#          APP_PATH="build/macos/Build/Products/Release/plezy.app"
+#          echo "Verifying signature..."
+#          codesign -dvvv "$APP_PATH"
+#          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
-      - name: Notarize Application
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          APP_PATH="build/macos/Build/Products/Release/plezy.app"
+#      - name: Notarize Application
+#        env:
+#          APPLE_ID: ${{ secrets.APPLE_ID }}
+#          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+#          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+#        run: |
+#          APP_PATH="build/macos/Build/Products/Release/plezy.app"
 
           # Create a temporary ZIP for notarization submission
-          echo "Creating ZIP for notarization..."
-          ditto -c -k --keepParent "$APP_PATH" notarization.zip
+#          echo "Creating ZIP for notarization..."
+#          ditto -c -k --keepParent "$APP_PATH" notarization.zip
 
           # Submit for notarization
-          echo "Submitting to Apple's notary service..."
-          xcrun notarytool submit notarization.zip \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait
+#          echo "Submitting to Apple's notary service..."
+#          xcrun notarytool submit notarization.zip \
+#            --apple-id "$APPLE_ID" \
+#            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+#            --team-id "$APPLE_TEAM_ID" \
+#            --wait
 
           # Staple the notarization ticket to the app
-          echo "Stapling notarization ticket..."
-          xcrun stapler staple "$APP_PATH"
+#          echo "Stapling notarization ticket..."
+#          xcrun stapler staple "$APP_PATH"
 
           # Verify stapling
-          echo "Verifying notarization..."
-          xcrun stapler validate "$APP_PATH"
+#          echo "Verifying notarization..."
+#          xcrun stapler validate "$APP_PATH"
 
       - name: Create ZIP
         run: |
           cd build/macos/Build/Products/Release
-          ditto -c -k --sequesterRsrc --keepParent plezy.app $GITHUB_WORKSPACE/plezy-macos.zip
+          ditto -c -k --sequesterRsrc --keepParent plezy.app $GITHUB_WORKSPACE/donut-macos.zip
 
       - name: Attest macOS ZIP
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: plezy-macos.zip
+          subject-path: donut-macos.zip
 
       - name: Upload macOS ZIP
         uses: actions/upload-artifact@v4
         with:
           name: macos-zip
-          path: plezy-macos.zip
+          path: donut-macos.zip
 
   build-windows:
     runs-on: windows-latest
@@ -307,20 +307,20 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            plezy-windows-portable.zip
-            plezy-windows-installer.exe
+            donut-windows-portable.zip
+            donut-windows-installer.exe
 
       - name: Upload Portable Archive
         uses: actions/upload-artifact@v4
         with:
           name: windows-portable
-          path: plezy-windows-portable.zip
+          path: donut-windows-portable.zip
 
       - name: Upload Installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: plezy-windows-installer.exe
+          path: donut-windows-installer.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -366,18 +366,18 @@ jobs:
       - name: Create Archive
         run: |
           cd build/linux/x64/release/bundle
-          tar -czf $GITHUB_WORKSPACE/plezy-linux.tar.gz *
+          tar -czf $GITHUB_WORKSPACE/donut-linux.tar.gz *
 
       - name: Attest Linux tarball
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: plezy-linux.tar.gz
+          subject-path: donut-linux.tar.gz
 
       - name: Upload Linux App
         uses: actions/upload-artifact@v4
         with:
           name: linux-app
-          path: plezy-linux.tar.gz
+          path: donut-linux.tar.gz
 
   create-release:
     needs:
@@ -404,12 +404,12 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/android-apk/plezy-android.apk
-            artifacts/ios-ipa/plezy-ios.ipa
-            artifacts/macos-zip/plezy-macos.zip
-            artifacts/windows-portable/plezy-windows-portable.zip
-            artifacts/windows-installer/plezy-windows-installer.exe
-            artifacts/linux-app/plezy-linux.tar.gz
+            artifacts/android-apk/donut-android.apk
+            artifacts/ios-ipa/dount-ios.ipa
+            artifacts/macos-zip/donut-macos.zip
+            artifacts/windows-portable/donut-windows-portable.zip
+            artifacts/windows-installer/donut-windows-installer.exe
+            artifacts/linux-app/donut-linux.tar.gz
           draft: true
           prerelease: false
           generate_release_notes: true

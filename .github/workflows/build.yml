@@ -207,7 +207,7 @@ jobs:
 #          IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | grep -o '".*"' | tr -d '"')
 #          echo "Signing with identity: $IDENTITY"
 #
-#          APP_PATH="build/macos/Build/Products/Release/plezy.app"
+#          APP_PATH="build/macos/Build/Products/Release/donut.app"
 
           # Sign all frameworks and dylibs first (inside-out signing)
 #          find "$APP_PATH/Contents/Frameworks" -name "*.framework" -o -name "*.dylib" | while read framework; do
@@ -221,7 +221,7 @@ jobs:
 
 #      - name: Verify Signature
 #        run: |
-#          APP_PATH="build/macos/Build/Products/Release/plezy.app"
+#          APP_PATH="build/macos/Build/Products/Release/donut.app"
 #          echo "Verifying signature..."
 #          codesign -dvvv "$APP_PATH"
 #          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
@@ -232,7 +232,7 @@ jobs:
 #          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
 #          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 #        run: |
-#          APP_PATH="build/macos/Build/Products/Release/plezy.app"
+#          APP_PATH="build/macos/Build/Products/Release/donut.app"
 
           # Create a temporary ZIP for notarization submission
 #          echo "Creating ZIP for notarization..."
@@ -257,7 +257,7 @@ jobs:
       - name: Create ZIP
         run: |
           cd build/macos/Build/Products/Release
-          ditto -c -k --sequesterRsrc --keepParent plezy.app $GITHUB_WORKSPACE/donut-macos.zip
+          ditto -c -k --sequesterRsrc --keepParent donut.app $GITHUB_WORKSPACE/donut-macos.zip
 
       - name: Attest macOS ZIP
         uses: actions/attest-build-provenance@v2
